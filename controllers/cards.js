@@ -1,5 +1,5 @@
 const Card = require('../models/card');
-const { OK_CODE, CREATED_CODE, ERROR_NOT_FOUND } = require('../utils/constants');
+const { CREATED_CODE, ERROR_NOT_FOUND } = require('../utils/constants');
 
 const { еrrorsHandler } = require('../utils/handlers');
 
@@ -10,7 +10,7 @@ module.exports.getCards = (req, res) => {
       { path: 'likes', model: 'user' },
     ])
     .then((card) => {
-      res.status(OK_CODE).send({ data: card });
+      res.send({ data: card });
     })
     .catch((err) => еrrorsHandler(err, res));
 };

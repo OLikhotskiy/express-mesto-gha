@@ -1,11 +1,11 @@
 const User = require('../models/user');
-const { OK_CODE, CREATED_CODE, ERROR_NOT_FOUND } = require('../utils/constants');
+const { CREATED_CODE } = require('../utils/constants');
 
 const { еrrorsHandler } = require('../utils/handlers');
 
 module.exports.getUsers = (req, res) => {
   User.find({})
-    .then((user) => res.status(OK_CODE).send({ data: user }))
+    .then((user) => res.send({ data: user }))
     .catch((err) => еrrorsHandler(err, res));
 };
 
@@ -23,17 +23,11 @@ module.exports.createUser = (req, res) => {
     .catch((err) => еrrorsHandler(err, res));
 };
 
-const checkUser = (user, res) => {
-  if (user) {
-    return res.send({ data: user });
-  }
-  return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь не найден' });
-};
-
 const updateUser = (req, res, updateData) => {
   const userId = req.user._id;
   User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
-    .then((user) => checkUser(user, res))
+    .orFail()
+    .then((user) => res.send(user))
     .catch((err) => еrrorsHandler(err, res));
 };
 

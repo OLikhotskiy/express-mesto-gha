@@ -12,7 +12,7 @@ module.exports.еrrorsHandler = (err, res) => {
     return res
       .status(ERROR_NOT_FOUND)
       .send({
-        message: `Пользователь не найден ${ERROR_NOT_FOUND}`,
+        message: `Cервер не может найти данные согласно запросу ${ERROR_NOT_FOUND}`,
       });
   }
 
