@@ -1,11 +1,20 @@
 const CREATED_CODE = 201;
 const ERROR_BAD_REQUEST = 400;
+const ERROR_NOTAUTHORIZED = 401;
+const ERROR_FORBIDDEN = 403;
 const ERROR_NOT_FOUND = 404;
+const ERROR_CONFLICT = 409;
 const ERROR_SERVER = 500;
+
+const REGEXP = /(https?:\/\/)(www)?([a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=])*#?$/;
 
 module.exports = {
   CREATED_CODE,
   ERROR_BAD_REQUEST,
+  ERROR_NOTAUTHORIZED,
+  ERROR_FORBIDDEN,
   ERROR_NOT_FOUND,
+  ERROR_CONFLICT,
   ERROR_SERVER,
+  REGEXP,
 };

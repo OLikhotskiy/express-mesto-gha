@@ -1,9 +1,9 @@
+const Forbidden = require('../errors/Forbidden');
+
 const Card = require('../models/card');
 const { CREATED_CODE, ERROR_NOT_FOUND } = require('../utils/constants');
 
-const { еrrorsHandler } = require('../utils/handlers');
-
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .populate([
       { path: 'owner', model: 'user' },
@@ -12,23 +12,33 @@ module.exports.getCards = (req, res) => {
     .then((card) => {
       res.send({ data: card });
     })
-    .catch((err) => еrrorsHandler(err, res));
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user;
   Card.create({ name, link, owner })
     .then((card) => card.populate('owner'))
     .then((card) => res.status(CREATED_CODE).send({ data: card }))
-    .catch((err) => еrrorsHandler(err, res));
+    .catch(next);
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndDelete(req.params.cardId)
     .orFail()
-    .then(() => res.send({ message: 'Карточка удалена' }))
-    .catch((err) => еrrorsHandler(err, res));
+    .then((card) => {
+      Card.deleteOne({ _id: card._id, owner: req.user._id })
+        .then((result) => {
+          if (result.deletedCount === 0) {
+            throw new Forbidden('Невозможно удалить карточку другого пользователя');
+          } else {
+            res.send({ message: 'Карточка удалена' });
+          }
+        })
+        .catch(next);
+    })
+    .catch(next);
 };
 
 const checkCard = (card, res) => {
@@ -40,24 +50,24 @@ const checkCard = (card, res) => {
     .send({ message: `Карточка не найдена ${ERROR_NOT_FOUND}` });
 };
 
-const updateCardLikes = (req, res, updateData) => {
+const updateCardLikes = (req, res, updateData, next) => {
   Card.findByIdAndUpdate(req.params.cardId, updateData, { new: true })
     .populate([
       { path: 'owner', model: 'user' },
       { path: 'likes', model: 'user' },
     ])
     .then((user) => checkCard(user, res))
-    .catch((err) => еrrorsHandler(err, res));
+    .catch(next);
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   const owner = req.user._id;
   const newData = { $addToSet: { likes: owner } };
-  updateCardLikes(req, res, newData);
+  updateCardLikes(req, res, newData, next);
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   const owner = req.user._id;
   const newData = { $pull: { likes: owner } };
-  updateCardLikes(req, res, newData);
+  updateCardLikes(req, res, newData, next);
 };

@@ -1,8 +1,13 @@
 const { ValidationError, CastError, DocumentNotFoundError } = require('mongoose').Error;
-const { ERROR_BAD_REQUEST, ERROR_NOT_FOUND, ERROR_SERVER } = require('./constants');
+const {
+  ERROR_BAD_REQUEST, ERROR_NOT_FOUND, ERROR_SERVER, ERROR_CONFLICT,
+} = require('./constants');
+const Forbidden = require('../errors/Forbidden');
+const NotFound = require('../errors/NotFound');
+const Notauthorized = require('../errors/Notauthorized');
 
-module.exports.еrrorsHandler = (err, res) => {
-  if (err instanceof ValidationError) {
+module.exports = (err, res, next) => {
+  if (err instanceof ValidationError || err instanceof CastError) {
     return res
       .status(ERROR_BAD_REQUEST)
       .send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
@@ -16,20 +21,19 @@ module.exports.еrrorsHandler = (err, res) => {
       });
   }
 
-  if (err instanceof CastError) {
+  if (err instanceof Forbidden || err instanceof NotFound || err instanceof Notauthorized) {
+    const { message } = err;
     return res
-      .status(ERROR_BAD_REQUEST)
-      .send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
+      .status(err.type)
+      .send({ message });
   }
-  return res
-    .status(ERROR_SERVER)
-    .send({
-      message: `Произошла неожиданная ошибка ${err.name}: ${err.message}`,
-    });
-};
 
-module.exports.notFound = (req, res) => {
-  res
-    .status(ERROR_NOT_FOUND)
-    .send({ message: 'Cтраница не найдена' });
+  if (err.code === 11000) {
+    return res
+      .status(ERROR_CONFLICT)
+      .send({ message: 'Такая электронная почта уже зарегистрированна' });
+  }
+
+  res.status(ERROR_SERVER).send({ message: `Произошла неожиданная ошибка ${err.name}: ${err.message}` });
+  return (next);
 };
