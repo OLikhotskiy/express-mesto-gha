@@ -2,30 +2,24 @@ const { ValidationError, CastError, DocumentNotFoundError } = require('mongoose'
 const {
   ERROR_BAD_REQUEST, ERROR_NOT_FOUND, ERROR_SERVER, ERROR_CONFLICT,
 } = require('./constants');
-const Forbidden = require('../errors/Forbidden');
-const NotFound = require('../errors/NotFound');
-const Notauthorized = require('../errors/Notauthorized');
 
-module.exports = (err, res, next) => {
-  if (err instanceof ValidationError || err instanceof CastError) {
-    return res
-      .status(ERROR_BAD_REQUEST)
-      .send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
+module.exports = (err, req, res, next) => {
+  if (err instanceof ValidationError) {
+    return res.status(ERROR_BAD_REQUEST).send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
   }
 
   if (err instanceof DocumentNotFoundError) {
-    return res
-      .status(ERROR_NOT_FOUND)
-      .send({
-        message: `Cервер не может найти данные согласно запросу ${ERROR_NOT_FOUND}`,
-      });
+    return res.status(ERROR_NOT_FOUND).send({ message: `Cервер не может найти данные согласно запросу ${ERROR_NOT_FOUND}` });
   }
 
-  if (err instanceof Forbidden || err instanceof NotFound || err instanceof Notauthorized) {
-    const { message } = err;
-    return res
-      .status(err.type)
-      .send({ message });
+  if (err instanceof CastError) {
+    return res.status(ERROR_BAD_REQUEST).send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
+  }
+
+  if (err.statusCode) {
+    return res.status(err.statusCode).send({
+      message: err.message,
+    });
   }
 
   if (err.code === 11000) {
@@ -35,5 +29,5 @@ module.exports = (err, res, next) => {
   }
 
   res.status(ERROR_SERVER).send({ message: `Произошла неожиданная ошибка ${err.name}: ${err.message}` });
-  return (next);
+  return next();
 };
