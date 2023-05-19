@@ -1,8 +1,7 @@
 const Forbidden = require('../errors/Forbidden');
-const NotFound = require('../errors/NotFound');
 
 const Card = require('../models/card');
-const { CREATED_CODE, ERROR_NOT_FOUND } = require('../utils/constants');
+const { CREATED_CODE } = require('../utils/constants');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
@@ -29,43 +28,27 @@ module.exports.deleteCard = (req, res, next) => {
   const _id = req.params.cardId;
 
   Card.findOne({ _id })
-    .populate([
-      { path: 'owner', model: 'user' },
-    ])
+    .orFail()
     .then((card) => {
-      if (!card) {
-        throw new NotFound('Карточка удалена');
+      if (card.owner._id.toString() === req.user._id.toString()) {
+        card.deleteOne()
+          .then(() => res.send({ message: 'Карточка удалена' }))
+          .catch(next);
+      } else {
+        next(new Forbidden('Невозможно удалить карточку другого пользователя'));
       }
-      if (card.owner._id.toString() !== req.user._id.toString()) {
-        throw new Forbidden('Невозможно удалить карточку другого пользователя');
-      }
-      Card.findByIdAndDelete({ _id })
-        .populate([
-          { path: 'owner', model: 'user' },
-        ])
-        .then((cardDeleted) => {
-          res.send({ data: cardDeleted });
-        });
     })
     .catch(next);
 };
 
-const checkCard = (card, res) => {
-  if (card) {
-    return res.send({ data: card });
-  }
-  return res
-    .status(ERROR_NOT_FOUND)
-    .send({ message: `Карточка не найдена ${ERROR_NOT_FOUND}` });
-};
-
 const updateCardLikes = (req, res, updateData, next) => {
   Card.findByIdAndUpdate(req.params.cardId, updateData, { new: true })
+    .orFail()
     .populate([
       { path: 'owner', model: 'user' },
       { path: 'likes', model: 'user' },
     ])
-    .then((user) => checkCard(user, res))
+    .then((card) => res.send({ data: card }))
     .catch(next);
 };
 
