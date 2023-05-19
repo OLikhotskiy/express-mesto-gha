@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const { CREATED_CODE, ERROR_NOTAUTHORIZED } = require('../utils/constants');
+const { CREATED_CODE } = require('../utils/constants');
 
 const { NODE_ENV, JWT_SECRET_KEY } = process.env;
 
@@ -62,7 +62,7 @@ module.exports.updateUserAvatar = (req, res, next) => {
   updateUser(req, res, { avatar }, next);
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
@@ -71,14 +71,12 @@ module.exports.login = (req, res) => {
         NODE_ENV === 'production' ? JWT_SECRET_KEY : 'secret-key',
         { expiresIn: '7d' },
       );
-      res.cookie('token', token, {
-        maxAge: 3600000,
+      res.cookie('jwt', token, {
+        maxAge: 3600000 * 24 * 7,
         httpOnly: true,
         sameSite: true,
       });
-      res.send({ token });
+      res.send({ message: 'Вы вошли!' });
     })
-    .catch((err) => {
-      res.status(ERROR_NOTAUTHORIZED).send({ message: err.message });
-    });
+    .catch(next);
 };

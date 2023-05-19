@@ -9,9 +9,8 @@ const NotFound = require('../errors/NotFound');
 router.use('/', signinRouter);
 router.use('/', signupRouter);
 
-router.use(auth);
-router.use('/users', usersRouter);
-router.use('/cards', cardsRouter);
+router.use('/users', auth, usersRouter);
+router.use('/cards', auth, cardsRouter);
 router.use('*', (req, res, next) => {
   next(new NotFound('Cтраница не найдена'));
 });

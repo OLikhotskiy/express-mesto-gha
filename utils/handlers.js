@@ -4,7 +4,7 @@ const {
 } = require('./constants');
 
 module.exports = (err, req, res, next) => {
-  if (err instanceof ValidationError) {
+  if (err instanceof ValidationError || err instanceof CastError) {
     return res.status(ERROR_BAD_REQUEST).send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
   }
 
@@ -12,14 +12,8 @@ module.exports = (err, req, res, next) => {
     return res.status(ERROR_NOT_FOUND).send({ message: `Cервер не может найти данные согласно запросу ${ERROR_NOT_FOUND}` });
   }
 
-  if (err instanceof CastError) {
-    return res.status(ERROR_BAD_REQUEST).send({ message: `Отправлен неправильный запрос ${ERROR_BAD_REQUEST}` });
-  }
-
   if (err.statusCode) {
-    return res.status(err.statusCode).send({
-      message: err.message,
-    });
+    return res.status(err.statusCode).send({ message: err.message });
   }
 
   if (err.code === 11000) {
