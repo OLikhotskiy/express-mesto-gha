@@ -1,4 +1,5 @@
 const Forbidden = require('../errors/Forbidden');
+const NotFound = require('../errors/NotFound');
 
 const Card = require('../models/card');
 const { CREATED_CODE, ERROR_NOT_FOUND } = require('../utils/constants');
@@ -25,18 +26,26 @@ module.exports.createCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndDelete(req.params.cardId)
-    .orFail()
+  const _id = req.params.cardId;
+
+  Card.findOne({ _id })
+    .populate([
+      { path: 'owner', model: 'user' },
+    ])
     .then((card) => {
-      Card.deleteOne({ _id: card._id, owner: req.user._id })
-        .then((result) => {
-          if (result.deletedCount === 0) {
-            throw new Forbidden('Невозможно удалить карточку другого пользователя');
-          } else {
-            res.send({ message: 'Карточка удалена' });
-          }
-        })
-        .catch(next);
+      if (!card) {
+        throw new NotFound('Карточка удалена');
+      }
+      if (card.owner._id.toString() !== req.user._id.toString()) {
+        throw new Forbidden('Невозможно удалить карточку другого пользователя');
+      }
+      Card.findByIdAndDelete({ _id })
+        .populate([
+          { path: 'owner', model: 'user' },
+        ])
+        .then((cardDeleted) => {
+          res.send({ data: cardDeleted });
+        });
     })
     .catch(next);
 };
